@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Explicitly permit aliasing with `Box<T>`.
+Explicitly permit unsafe aliasing with `Box<T>`.
 
 # Motivation
 [motivation]: #motivation
