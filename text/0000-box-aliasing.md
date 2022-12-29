@@ -75,7 +75,7 @@ This change will remove some aliasing optimizations from existing Rust programs,
 Aliasing optimizations on `Box<T>` are predicated on introducing rules that surprise users of unsafe Rust.
 In combination with the already-existing legacy Rust code in the wild, even if we were to effectively publicize and document the aliasing rules for `Box<T>`, optimizations based on those rules would be predicated on rules that existing code assumes don't exist.
 
-If we do not remove aliasing optimizations based on `Box<T>`, we risk introducing surprise "miscompilations" into existing Rust code.
+If we do not remove aliasing optimizations based on `Box<T>`, we risk introducing surprise "miscompilations" into existing and future Rust code.
 
 # Prior art
 [prior-art]: #prior-art
