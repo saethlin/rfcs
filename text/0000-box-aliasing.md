@@ -47,21 +47,59 @@ Some documentation in `std::boxed` which was previously added in an effort to am
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-An implementation could be as simple as this, though the comment should probably be adjusted too:
-```diff
-diff --git a/compiler/rustc_ty_utils/src/abi.rs b/compiler/rustc_ty_utils/src/abi.rs
-index 73c7eb6992f..ab63ee58d74 100644
---- a/compiler/rustc_ty_utils/src/abi.rs
-+++ b/compiler/rustc_ty_utils/src/abi.rs
-@@ -242,7 +242,7 @@ fn adjust_for_rust_scalar<'tcx>(
-             // The aliasing rules for `Box<T>` are still not decided, but currently we emit
-             // `noalias` for it. This can be turned off using an unstable flag.
-             // See https://github.com/rust-lang/unsafe-code-guidelines/issues/326
--            let noalias_for_box = cx.tcx.sess.opts.unstable_opts.box_noalias.unwrap_or(true);
-+            let noalias_for_box = cx.tcx.sess.opts.unstable_opts.box_noalias.unwrap_or(false);
+Without establishing specifics of the aliasing model, this RFC provides a guarantee that unsafe code using raw pointers may treat a `Box<T>` as if it is a raw pointer.
+Specifically, an implementation of this RFC guarantees that the programs in this section execute without Undefined Behavior.
 
-             // `&mut` pointer parameters never alias other parameters,
-             // or mutable global data
+Moving a `Box` does not invalidate aliased raw pointers:
+```rust
+fn main() {
+    let mut my_boxes = Vec::new();
+    let b = Box::new(0usize);
+    let ptr = &*b as *const usize;
+    my_boxes.push(b);
+    unsafe {
+        dbg!(*ptr);
+    }
+    dbg!(&my_boxes[0]);
+}
+```
+
+Passing a `Box` to a function does not assert uniqueness:
+```rust
+unsafe fn takes_box(b: Box<usize>, ptr: *const usize) {
+    dbg!(*ptr);
+    dbg!(b);
+}
+
+fn main() {
+    let b = Box::new(0usize);
+    let ptr = &*b as *const usize;
+    unsafe {
+        takes_box(b, ptr);
+    }
+}
+```
+
+Returning a `Box` from a function does not assert uniqueness, or `fn() -> Box<T>` does not have aliasing guarantees like `malloc`:
+```rust
+static mut ALIAS: *const usize = std::ptr::null();
+
+fn make_box_and_alias() -> Box<usize> {
+    let b = Box::new(0usize);
+    let ptr = &*b as *const usize;
+    unsafe {
+        ALIAS = ptr;
+    }
+    b
+}
+
+fn main() {
+    let b = make_box_and_alias();
+    unsafe {
+        dbg!(*ALIAS);
+    }
+    dbg!(b);
+}
 ```
 
 # Drawbacks
